@@ -1,0 +1,270 @@
+package printer
+
+import (
+	"fmt"
+	"github.com/fatih/color"
+	"strings"
+	"time"
+	"zimmer/tempo/helper"
+	"zimmer/tempo/model"
+)
+
+type data struct {
+	date        [6][8]time.Time
+	weather     [6][8]string
+	temperature [6][8]float64
+	humidity    [6][8]int
+}
+
+func PrintWeather(w model.Weather, unit string) {
+	header := fmt.Sprintf("     %s, %s    (%.1f, %.1f)", w.Name, w.Sys.Country, w.Coord.Lon, w.Coord.Lat)
+	unit = strings.ToUpper(unit)
+
+	fmt.Printf("\n%s"+
+		"\n%s"+
+		"\n\n   Weather:    %s %s"+
+		"\n\n   Temperature:    %.1f %s\n           Max:    %.1f %s\n           Min:    %.1f %s"+
+		"\n\n   Clouds:         %.1f %%\n   Humidity:       %.1f %%\n   Visibility:     %.1f %%"+
+		"\n\n   Last Update:    %s"+
+		"\n\n",
+		header, lineMaker(len(header), 4),
+		w.Weather[0].Main, descParse(w.Weather[0].Description),
+		tempConvert(w.Main.Temp, unit), unit,
+		tempConvert(w.Main.TempMax, unit), unit,
+		tempConvert(w.Main.TempMin, unit), unit,
+		w.Clouds.All, w.Main.Humidity, w.Visibility/100,
+		helper.TimeDiff(w.Dt),
+	)
+}
+
+func PrintForecast(w model.Forecast, unit string) {
+	spacer := 10
+
+	drawHeader(&w)
+
+	var info data
+	initInfo(&info, w)
+
+	drawFirst(&info, spacer, unit)
+
+	var n int
+	if info.weather[5][0] == "" {
+		n = 5
+	} else {
+		n = 6
+	}
+
+	for j := 1; j < n; j++ {
+		draw(&info, j, spacer, unit)
+	}
+
+	fmt.Println()
+
+}
+
+func drawHeader(w *model.Forecast) {
+	header := fmt.Sprintf("%s, %s    (%.1f, %.1f)", w.City.Name, w.City.Country, w.City.Coord.Lon, w.City.Coord.Lat)
+	color.Set(color.FgRed)
+	fmt.Printf("\n%s%s", intToSpace(33), header)
+	color.Set(color.FgHiGreen)
+	fmt.Printf("\n%sCaption: W - Weather, T - Temperature, H - Humidity", intToSpace(25))
+	color.Unset()
+}
+
+func draw(info *data, j int, spacer int, unit string) {
+	color.Set(color.FgYellow)
+	fmt.Printf("\n %s:\n", helper.FormatDate(info.date[j][0]))
+	color.Set(color.FgHiBlue)
+	drawTime(info.date[j], intToSpace(spacer))
+	color.Unset()
+
+	fmt.Print("  W.  ")
+	for i := 0; i < 8; i++ {
+		if info.weather[j][i] == "" {
+			fmt.Print(" * " + intToSpace(spacer))
+		} else {
+			fmt.Printf("%s"+spaceMaker(len(info.weather[j][i]), spacer+3), info.weather[j][i])
+		}
+	}
+	fmt.Println()
+	fmt.Print("  T.  ")
+	for i := 0; i < 8; i++ {
+		if info.weather[j][i] == "" {
+			fmt.Print(" * " + intToSpace(spacer))
+		} else {
+			temp := fmt.Sprintf("%.1f %s", tempConvert(info.temperature[j][i], unit), unit)
+			fmt.Printf("%s"+spaceMaker(len(temp), spacer+3), temp)
+		}
+	}
+	fmt.Println()
+	fmt.Print("  H.  ")
+	for i := 0; i < 8; i++ {
+		if info.weather[j][i] == "" {
+			fmt.Print(" * " + intToSpace(spacer))
+		} else {
+			hum := fmt.Sprintf("%d%%", info.humidity[j][i])
+			fmt.Printf("%s"+spaceMaker(len(hum), spacer+3), hum)
+		}
+	}
+	fmt.Println()
+}
+
+func drawFirst(info *data, spacer int, unit string) {
+	color.Set(color.FgYellow)
+	fmt.Printf(" %s:\n", helper.FormatDate(info.date[0][0]))
+	color.Set(color.FgHiBlue)
+	drawTimeFirst(info.date[0], intToSpace(spacer))
+	color.Unset()
+
+	fmt.Print("  W.  ")
+	for i := 0; i < 8-arraySize(info.date[0]); i++ {
+		fmt.Print(" * " + intToSpace(spacer))
+	}
+	for i := 0; i < arraySize(info.date[0]); i++ {
+		fmt.Printf("%s"+spaceMaker(len(info.weather[0][i]), spacer+3), info.weather[0][i])
+	}
+	fmt.Println()
+	fmt.Print("  T.  ")
+	for i := 0; i < 8-arraySize(info.date[0]); i++ {
+		fmt.Print(" * " + intToSpace(spacer))
+	}
+	for i := 0; i < arraySize(info.date[0]); i++ {
+		temp := fmt.Sprintf("%.1f %s", tempConvert(info.temperature[0][i], unit), unit)
+		fmt.Printf("%s"+spaceMaker(len(temp), spacer+3), temp)
+	}
+	fmt.Println()
+	fmt.Print("  H.  ")
+	for i := 0; i < 8-arraySize(info.date[0]); i++ {
+		fmt.Print(" * " + intToSpace(spacer))
+	}
+	for i := 0; i < arraySize(info.date[0]); i++ {
+		hum := fmt.Sprintf("%d%%", info.humidity[0][i])
+		fmt.Printf("%s"+spaceMaker(len(hum), spacer+3), hum)
+	}
+	fmt.Println()
+}
+
+func drawTime(date [8]time.Time, spacer string) {
+	fmt.Print("      ")
+
+	for i := 0; i < len(date); i++ {
+		if date[i].Hour() == 0 {
+			fmt.Print("---" + spacer)
+		} else {
+			fmt.Printf("%s"+spacer, helper.ParseHour(date[i]))
+		}
+	}
+
+	fmt.Println()
+}
+
+func drawTimeFirst(date [8]time.Time, spacer string) {
+	size := arraySize(date)
+	fmt.Print("      ")
+	for i := 0; i < 8-size; i++ {
+		fmt.Print("---" + spacer)
+	}
+	for i := 0; i < size; i++ {
+		fmt.Printf("%s"+spacer, helper.ParseHour(date[i]))
+	}
+
+	fmt.Println()
+}
+
+func dateFormat(dt int64) string {
+	return helper.FormatDate(helper.ParseTime(dt))
+}
+
+func initInfo(info *data, w model.Forecast) {
+	j := 0
+	k := 0
+	lastDay := helper.ParseTime(w.List[0].Dt).Day()
+	fmt.Println()
+	for i := 0; i < w.Cnt; i++ {
+		if lastDay != helper.ParseTime(w.List[i].Dt).Day() {
+			j++
+			k = 0
+		}
+
+		info.date[j][k] = helper.ParseTime(w.List[i].Dt)
+		info.weather[j][k] = w.List[i].Weather[0].Main
+		info.temperature[j][k] = w.List[i].Main.Temp
+		info.humidity[j][k] = w.List[i].Main.Humidity
+
+		lastDay = helper.ParseTime(w.List[i].Dt).Day()
+		k++
+	}
+
+}
+
+func arraySize(array [8]time.Time) int {
+	for i := 0; i < 8; i++ {
+		if array[i].Hour() == 0 {
+			return i
+		}
+	}
+	return 8
+}
+
+func tempConvert(temp float64, unit string) float64 {
+
+	switch unit {
+	case "C":
+		return temp - 273.15
+	case "F":
+		return (9/5)*(temp-273.15) + 32
+	case "K":
+		return temp
+	}
+
+	return 0
+}
+
+func descParse(desc string) string {
+	str := strings.Split(desc, " ")
+
+	if desc == "clear sky" {
+		return ""
+	}
+
+	if len(str) == 1 {
+		return ""
+	} else if len(str) == 2 {
+		return "(" + str[0] + ")"
+	} else if len(str) >= 3 {
+		if str[0] == "thunderstorm" {
+			return "(" + strings.Join(str[1:], " ") + ")"
+		} else {
+			return "(" + strings.Join(str[:len(str)-1], " ") + ")"
+		}
+	}
+	return "(" + desc + ")"
+}
+
+func lineMaker(strSize int, additional int) string {
+	line := " "
+
+	for i := 0; i < strSize-1+additional; i++ {
+		line += "-"
+	}
+
+	return line
+}
+
+func spaceMaker(strSize int, reqSize int) string {
+	line := ""
+
+	for i := 0; i < reqSize-strSize; i++ {
+		line += " "
+	}
+
+	return line
+}
+
+func intToSpace(n int) string {
+	str := ""
+	for i := 0; i < n; i++ {
+		str += " "
+	}
+	return str
+}
