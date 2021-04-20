@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"zimmer/args"
-	"zimmer/tempo/service/api"
-	"zimmer/tempo/service/printer"
+	"tempo/args"
+	"tempo/service/api"
+	"tempo/service/printer"
 )
 
 func main() {

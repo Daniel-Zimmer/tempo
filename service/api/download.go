@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"zimmer/tempo/model"
+	"tempo/model"
 )
 
 type ApiUrl struct {

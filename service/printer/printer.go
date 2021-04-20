@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"strings"
+	"tempo/helper"
+	"tempo/model"
 	"time"
-	"zimmer/tempo/helper"
-	"zimmer/tempo/model"
 )
 
 type data struct {
@@ -147,7 +147,6 @@ func parseHeadDate(date [8]time.Time) string {
 func drawTime(spacer int, weather *[6][8]string) {
 	fmt.Print("      ")
 
-	grey := color.New(color.FgBlack).SprintFunc()
 	color.Set(color.FgBlue)
 	for i := 1; i < 10; i += 3 {
 		fmt.Printf("0%dh%s", i, intToSpace(spacer-3))
